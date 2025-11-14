@@ -228,14 +228,7 @@ async function processFile(file, source, tag, ip) {
   );
 
   return {
-    uploadId: uuid(),
-    filename: sanitizedName,
-    originalFilename: file.originalname,
-    s3Location: `s3://${config.aws.bucketName}/${s3Key}`,
-    s3Key,
-    versionId: uploadResult.versionId,
     size: file.size,
-    contentType: file.mimetype,
     uploadedAt: new Date().toISOString(),
     metadata: {
       source: source || config.defaultSourceFolder,
