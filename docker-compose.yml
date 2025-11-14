@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: datapus
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Server
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+
+      # API Key (will be auto-generated if not provided)
+      - API_KEY=${API_KEY:-}
+
+      # AWS S3
+      - AWS_REGION=${AWS_REGION:-ap-south-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+
+      # File Validation
+      - ALLOWED_FILE_TYPES=${ALLOWED_FILE_TYPES:-pdf,jpg,jpeg,png,doc,docx,txt,zip}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-100MB}
+      - MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-500MB}
+
+      # Virus Scanning
+      - ENABLE_VIRUS_SCAN=${ENABLE_VIRUS_SCAN:-true}
+      - CLAMAV_HOST=clamav
+      - CLAMAV_PORT=3310
+
+      # Upload Configuration
+      - ENABLE_VERSIONING=${ENABLE_VERSIONING:-true}
+      - MULTIPART_CHUNK_SIZE=${MULTIPART_CHUNK_SIZE:-5MB}
+      - MAX_CONCURRENT_UPLOADS=${MAX_CONCURRENT_UPLOADS:-5}
+
+      # Folder Structure
+      - DEFAULT_SOURCE_FOLDER=${DEFAULT_SOURCE_FOLDER:-uploads}
+      - TAG_SEPARATOR=${TAG_SEPARATOR:-_}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      clamav:
+        condition: service_healthy
+    networks:
+      - datapus-network
+    restart: unless-stopped
+
+  clamav:
+    image: clamav/clamav:1.2.0
+    container_name: clamav
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamscan", "--ping"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - datapus-network
+    restart: unless-stopped
+
+volumes:
+  clamav-data:
+    driver: local
+
+networks:
+  datapus-network:
+    driver: bridge
