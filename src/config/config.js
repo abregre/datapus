@@ -1,7 +1,11 @@
+console.log("CONFIG: Starting config loading...");
 const { parseSize } = require("../utils/sizeParser");
+console.log("CONFIG: sizeParser loaded.");
 
 // Load environment variables
+console.log("CONFIG: Loading dotenv config...");
 require("dotenv").config();
+console.log("CONFIG: dotenv config loaded.");
 
 const config = {
   // Server
@@ -44,18 +48,25 @@ const config = {
   tagSeparator: process.env.TAG_SEPARATOR || "_",
 };
 
+console.log("CONFIG: File size and request size parsed.");
+
 // Validation
+console.log("CONFIG: Starting validation...");
 if (!config.aws.accessKeyId) {
+  console.error("CONFIG ERROR: AWS_ACCESS_KEY_ID environment variable is required");
   throw new Error("AWS_ACCESS_KEY_ID environment variable is required");
 }
 
 if (!config.aws.secretAccessKey) {
+  console.error("CONFIG ERROR: AWS_SECRET_ACCESS_KEY environment variable is required");
   throw new Error("AWS_SECRET_ACCESS_KEY environment variable is required");
 }
 
 if (!config.aws.bucketName) {
+  console.error("CONFIG ERROR: S3_BUCKET_NAME environment variable is required");
   throw new Error("S3_BUCKET_NAME environment variable is required");
 }
+console.log("CONFIG: Validation passed.");
 
 // Log loaded configuration (masking secrets)
 console.log("Configuration loaded:", {
@@ -72,5 +83,6 @@ console.log("Configuration loaded:", {
   virusScan: config.virusScan,
   versioning: config.versioning,
 });
+console.log("CONFIG: Configuration object exported.");
 
 module.exports = config;
