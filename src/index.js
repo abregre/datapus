@@ -4,12 +4,6 @@ const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const { v4: uuid } = require("uuid");
 
-const express = require("express");
-const helmet = require("helmet");
-const cors = require("cors");
-const rateLimit = require("express-rate-limit");
-const { v4: uuid } = require("uuid");
-
 // Load config
 require("dotenv").config();
 const config = require("./config/config");

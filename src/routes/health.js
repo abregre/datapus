@@ -4,7 +4,7 @@ const s3Service = require("../services/s3Service");
 const config = require("../config/config");
 const NodeClam = require("clamscan");
 
-router.get("/health", async (req, res) => {
+router.get("/", async (req, res) => {
   const health = {
     status: "ok",
     timestamp: new Date().toISOString(),
