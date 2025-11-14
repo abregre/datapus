@@ -16,20 +16,31 @@ async function initializeScanner(config) {
     return null;
   }
 
-  try {
-    clamScanner = await new NodeClam().init({
-      clamdscan: {
-        host: config.virusScan.host,
-        port: config.virusScan.port,
-        timeout: 60000,
-      },
-      preference: "clamdscan",
-    });
+  let retries = 5;
+  let delay = 5000;
 
-    return clamScanner;
-  } catch (error) {
-    console.error("Failed to initialize ClamAV scanner:", error.message);
-    throw new Error(`ClamAV initialization failed: ${error.message}`);
+  for (let i = 0; i < retries; i++) {
+    try {
+      clamScanner = await new NodeClam().init({
+        clamdscan: {
+          host: config.virusScan.host,
+          port: config.virusScan.port,
+          timeout: 60000,
+        },
+        preference: "clamdscan",
+      });
+
+      console.log(`ClamAV scanner initialized successfully (attempt ${i + 1})`);
+      return clamScanner;
+    } catch (error) {
+      console.error(`ClamAV initialization attempt ${i + 1} failed:`, error.message);
+      if (i < retries - 1) {
+        console.log(`Retrying in ${delay/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`ClamAV initialization failed after ${retries} attempts: ${error.message}`);
+      }
+    }
   }
 }
 
