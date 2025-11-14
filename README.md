@@ -231,3 +231,58 @@ Upload a single file to S3.
 | `file`   | file   | Yes      | File to upload                     |
 | `source` | string | No       | Source folder (default: 'uploads') |
 | `tag`    | string | No       | Tag subfolder (default: 'general') |
+---
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Container won't start**
+   - Check that all required environment variables are set (AWS credentials)
+   - Verify that the ClamAV service is healthy before the API starts
+   - Ensure you have valid AWS credentials with S3 permissions
+
+2. **File upload fails**
+   - Verify that the file type is in the ALLOWED_FILE_TYPES list
+   - Check that the file size is within MAX_FILE_SIZE limits
+   - Ensure virus scanning service is running if enabled
+
+3. **API key not working**
+   - Check the logs for the generated API key: `docker-compose logs api | grep "API KEY"`
+   - Ensure the X-API-Key header is properly formatted
+   - Verify the API key matches exactly (case-sensitive)
+
+4. **S3 upload errors**
+   - Confirm AWS credentials have proper S3 permissions
+   - Verify the S3 bucket exists and is accessible
+   - Check that the region matches your bucket's region
+
+5. **Permission errors on cloud server**
+   - The container runs as user 'nodejs' (UID 1001) but mounts host directories
+   - If you get permission errors, fix ownership on the host system:
+   
+   ```bash
+   # Fix permissions for data and logs directories
+   sudo chown -R 1001:1001 data/
+   sudo chown -R 1001:1001 logs/
+   ```
+   
+   - Or run the container with matching user ID:
+   
+   ```bash
+   # Set the container to run with your user ID
+   docker-compose run --user $(id -u):$(id -g) api
+   ```
+
+---
+
+## Security
+
+### Best Practices
+
+- Never commit AWS credentials to version control
+- Use strong, randomly generated API keys
+- Implement proper network security (firewalls, VPNs)
+- Regularly update container images
+- Monitor logs for suspicious activity
+- Use HTTPS in production with proper certificates
