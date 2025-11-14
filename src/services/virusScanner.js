@@ -55,7 +55,7 @@ async function scanFile(filePath) {
   }
 
   try {
-    const { isInfected, viruses } = await clamScanner.scan_file(filePath);
+    const { isInfected, viruses } = await clamScanner.scanFile(filePath);
 
     console.log(
       `Virus scan completed for ${filePath}: infected=${isInfected}`,
@@ -68,7 +68,7 @@ async function scanFile(filePath) {
 
     return { isInfected, viruses: viruses || [] };
   } catch (error) {
-    console.error(`Virus scan failed for file ${filePath}:`, error.message);
+    console.error(`Virus scan failed for file ${filePath}:`, error);
     throw error;
   }
 }
@@ -100,7 +100,7 @@ async function scanBuffer(buffer) {
 
     return result;
   } catch (error) {
-    console.error("Buffer scan failed:", error.message);
+    console.error("Buffer scan failed:", error);
     throw error;
   } finally {
     // Clean up temp file if it was created

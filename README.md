@@ -67,7 +67,7 @@ docker-compose logs api | grep "API KEY"
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/upload \
-  -H "X-API-Key: your-api-key-here" \
+  -H "X-API-Key: 3dcc8fe9a9c082019d9721c566488362aa14e3e739db3a1aafff14d2fe1767e4" \
   -F "file=@/path/to/test.pdf" \
   -F "source=test" \
   -F "tag=demo"
