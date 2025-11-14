@@ -117,6 +117,7 @@ async function startup() {
 
     // Initialize virus scanner
     if (config.virusScan.enabled) {
+      logger.info("Initializing virus scanner...");
       await virusScanner.initializeScanner(config);
       logger.info("Virus scanner initialized");
     } else {
@@ -139,7 +140,7 @@ async function startup() {
       });
     });
   } catch (error) {
-    logger.error("Failed to start service", { error: error.message });
+    logger.error("Failed to start service", { error });
     process.exit(1);
   }
 }
