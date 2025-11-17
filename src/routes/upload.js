@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const { v4: uuid } = require("uuid");
+const axios = require("axios");
+const path = require("path");
 const config = require("../config/config");
 const logger = require("../utils/logger");
 const fileValidator = require("../services/fileValidator");
@@ -8,9 +10,60 @@ const virusScanner = require("../services/virusScanner");
 const s3Service = require("../services/s3Service");
 const { VirusScanError } = require("../utils/errors");
 const { authenticate } = require("../middleware/auth");
-const { setupMulter, validateUploadRequest } = require("../middleware/validation");
+const {
+  setupMulter,
+  validateUploadRequest,
+} = require("../middleware/validation");
 
 const upload = setupMulter();
+
+router.post(
+  "/upload/url",
+  authenticate,
+  validateUploadRequest,
+  async (req, res, next) => {
+    try {
+      const { url, source, tag } = req.body;
+
+      if (!url) {
+        return res
+          .status(400)
+          .json({ success: false, message: "File URL is required." });
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+        maxContentLength: config.maxFileSize,
+        maxBodyLength: config.maxFileSize,
+      });
+      const fileBuffer = Buffer.from(response.data, "binary");
+
+      const urlPath = new URL(url).pathname;
+      const originalname = path.basename(urlPath);
+
+      const mimetype = response.headers["content-type"];
+
+      const file = {
+        originalname,
+        mimetype,
+        buffer: fileBuffer,
+        size: fileBuffer.length,
+      };
+
+      const result = await processFile(file, source, tag, req.ip);
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        error.statusCode = error.response.status;
+      }
+      next(error);
+    }
+  }
+);
 
 // Single file upload
 router.post(
@@ -23,59 +76,13 @@ router.post(
       const file = req.file;
       const { source, tag } = req.body;
 
-      // Validate filename
-      const sanitizedName = fileValidator.validateFileName(file.originalname);
-
-      // Validate file type
-      fileValidator.validateFileType(
-        sanitizedName,
-        file.mimetype,
-        config.allowedFileTypes
-      );
-
-      // Validate size
-      fileValidator.validateFileSize(file.size, config.maxFileSize);
-
-      // Scan for viruses if enabled
-      if (config.virusScan.enabled) {
-        const scanResult = await virusScanner.scanBuffer(file.buffer);
-        if (scanResult.isInfected) {
-          throw new VirusScanError(
-            `Virus detected: ${scanResult.viruses.join(", ")}`
-          );
-        }
-      }
-
-      // Generate S3 key
-      const s3Key = s3Service.generateS3Key(
-        source || config.defaultSourceFolder,
-        tag || "general",
-        sanitizedName
-      );
-
-      // Upload to S3
-      const uploadResult = await s3Service.uploadFile(
-        file.buffer,
-        s3Key,
-        {
-          contentType: file.mimetype,
-          originalFilename: file.originalname,
-          sourceIp: req.ip,
-          size: file.size,
-        },
-        {
-          source: source || config.defaultSourceFolder,
-          tag: tag || "general",
-          "upload-date": new Date().toISOString().split("T")[0],
-          "content-type": file.mimetype,
-        }
-      );
+      const result = await processFile(file, source, tag, req.ip);
 
       // Log successful upload
       logger.info("File uploaded successfully", {
-        filename: sanitizedName,
-        size: file.size,
-        s3Key,
+        filename: result.filename,
+        size: result.size,
+        s3Key: result.s3Key,
         source,
         tag,
       });
@@ -83,21 +90,7 @@ router.post(
       // Return success response
       res.json({
         success: true,
-        data: {
-          uploadId: uuid(),
-          filename: sanitizedName,
-          originalFilename: file.originalname,
-          s3Location: `s3://${config.aws.bucketName}/${s3Key}`,
-          s3Key,
-          versionId: uploadResult.versionId,
-          size: file.size,
-          contentType: file.mimetype,
-          uploadedAt: new Date().toISOString(),
-          metadata: {
-            source: source || config.defaultSourceFolder,
-            tag: tag || "general",
-          },
-        },
+        data: result,
       });
     } catch (error) {
       next(error);
@@ -228,7 +221,14 @@ async function processFile(file, source, tag, ip) {
   );
 
   return {
+    uploadId: uuid(),
+    filename: sanitizedName,
+    originalFilename: file.originalname,
+    s3Location: `s3://${config.aws.bucketName}/${s3Key}`,
+    s3Key,
+    versionId: uploadResult.versionId,
     size: file.size,
+    contentType: file.mimetype,
     uploadedAt: new Date().toISOString(),
     metadata: {
       source: source || config.defaultSourceFolder,

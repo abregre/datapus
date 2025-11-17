@@ -42,6 +42,7 @@ services:
       - DEFAULT_SOURCE_FOLDER=${DEFAULT_SOURCE_FOLDER:-uploads}
       - TAG_SEPARATOR=${TAG_SEPARATOR:-_}
     volumes:
+      - ./src:/app/src
       - ./data:/app/data
       - ./logs:/app/logs
     depends_on:

@@ -5,6 +5,9 @@ A production-ready, containerized Node.js/Express API for secure file uploads to
 ## Features
 
 - ✅ **Secure File Uploads** - API key authentication
+- ✅ **URL Uploads** - Upload files directly from a URL
+- ✅ **Batch Processing** - Efficiently upload multiple files in one request
+- ✅ **Enhanced Security** - Rate limiting, CORS, and Helmet security headers
 - ✅ **Virus Scanning** - Integrated ClamAV for malware detection
 - ✅ **S3 Storage** - Automatic upload to AWS S3 with versioning
 - ✅ **File Validation** - Type, size, and name validation
@@ -231,6 +234,70 @@ Upload a single file to S3.
 | `file`   | file   | Yes      | File to upload                     |
 | `source` | string | No       | Source folder (default: 'uploads') |
 | `tag`    | string | No       | Tag subfolder (default: 'general') |
+---
+
+#### 3. Upload from URL
+
+Upload a file directly from a URL.
+
+**Endpoint:** `POST /api/v1/upload/url`
+
+**Authentication:** Required
+
+**Content-Type:** `application/json`
+
+**Parameters:**
+
+| Field    | Type   | Required | Description                        |
+| -------- | ------ | -------- | ---------------------------------- |
+| `url`    | string | Yes      | URL of the file to upload          |
+| `source` | string | No       | Source folder (default: 'uploads') |
+| `tag`    | string | No       | Tag subfolder (default: 'general') |
+
+**curl Example:**
+
+```bash
+curl -X POST http://localhost:3000/api/v1/upload/url \
+  -H "X-API-Key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+    "source": "testing",
+    "tag": "url-upload"
+  }'
+```
+
+---
+
+#### 4. Batch File Upload
+
+Upload multiple files in a single request.
+
+**Endpoint:** `POST /api/v1/upload/batch`
+
+**Authentication:** Required
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+
+| Field    | Type   | Required | Description                        |
+| -------- | ------ | -------- | ---------------------------------- |
+| `files`  | file[] | Yes      | Array of files to upload           |
+| `source` | string | No       | Source folder (default: 'uploads') |
+| `tag`    | string | No       | Tag subfolder (default: 'general') |
+
+**curl Example:**
+
+```bash
+curl -X POST http://localhost:3000/api/v1/upload/batch \
+  -H "X-API-Key: your-api-key" \
+  -F "files=@/path/to/file1.pdf" \
+  -F "files=@/path/to/file2.jpg" \
+  -F "source=batch-test" \
+  -F "tag": "project-x"
+```
+
 ---
 
 ## Troubleshooting

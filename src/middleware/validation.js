@@ -109,7 +109,19 @@ function validateFileTypeByMagicNumber(buffer, expectedExtension) {
  * @param {Function} next - Express next function
  */
 function validateUploadRequest(req, res, next) {
-  // Check if file exists in req.file or req.files
+  // For /api/v1/upload/url endpoint, file is fetched from URL, not directly uploaded
+  if (req.originalUrl === "/api/v1/upload/url") {
+    const { url } = req.body;
+    if (!url) {
+      return next(
+        new ValidationError("MISSING_URL", "File URL is required in request body")
+      );
+    }
+    // Proceed to next middleware/route handler, as file validation will happen after fetching
+    return next();
+  }
+
+  // For other upload endpoints, check if file exists in req.file or req.files
   const files = req.files || req.file;
   if (!files) {
     if (req.fileValidationError) {
